@@ -83,7 +83,7 @@ static void loadModel(const std::string filename, GLuint& positions_vbo,
 }
 
 static void loadModels(void) {
-  loadModel("meshes/pixarlamp/pixarlamp.obj", lamp_positions_vbo,
+  loadModel("meshes/pixarlamp/pixar.obj", lamp_positions_vbo,
             lamp_texCoords_vbo, lamp_normals_vbo, numVerticesLamp,
             lampIndexBuffer);
 }
