@@ -2,6 +2,7 @@
 
 ## Group Members
 Alex Zheng - 100625391
+Justin Lin-Sin-Cho 100491150
 
 
 ## Requirements/Dependencies
