@@ -33,6 +33,17 @@ GLuint lamp_normals_vbo = 0;
 GLuint lmap_colours_vbo = 0;
 unsigned int numVerticesLamp;
 
+// pixar text
+GLuint textProgramId;
+GLuint textVertexBuffer;
+GLuint textIndexBuffer;
+GLenum textPositionBufferId;
+GLuint text_positions_vbo = 500;
+GLuint text_texCoords_vbo = 500;
+GLuint text_normals_vbo = 500;
+GLuint text_colours_vbo = 500;
+unsigned int numVerticesText;
+
 bool scaling = false;
 bool rotating = true;
 float xAngle = 0.0f;
@@ -83,9 +94,13 @@ static void loadModel(const std::string filename, GLuint& positions_vbo,
 }
 
 static void loadModels(void) {
-  loadModel("meshes/pixarlamp/pixar.obj", lamp_positions_vbo,
+  loadModel("meshes/pixarlamp/pixarlamp.obj", lamp_positions_vbo,
             lamp_texCoords_vbo, lamp_normals_vbo, numVerticesLamp,
             lampIndexBuffer);
+  loadModel("meshes/pixarlamp/pixar.obj", text_positions_vbo,
+            text_texCoords_vbo, text_normals_vbo, numVerticesText,
+            textIndexBuffer);
+  
 }
 
 static void loadShader(const std::string vertShaderName,
@@ -98,6 +113,7 @@ static void loadShader(const std::string vertShaderName,
 
 static void loadShaders() {
   loadShader("shaders/vertex.glsl", "shaders/fragment.glsl", lampProgramId);
+  loadShader("shaders/vertex.glsl", "shaders/fragment.glsl", textProgramId);
 }
 
 
@@ -119,7 +135,7 @@ static void update(void) {
 static void renderModel(GLuint programId, GLuint& positions_vbo,
                         GLuint& texCoords_vbo, GLuint& normals_vbo,
                         GLuint& indexBuffer, unsigned int numVertices) {
-  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+  //glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
   // Draw the lamp model
 	glUseProgram(programId);
@@ -222,10 +238,15 @@ static void renderModel(GLuint programId, GLuint& positions_vbo,
 
 static void render(void) {
   // Render the lamp
+  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+  renderModel(textProgramId, text_positions_vbo, text_texCoords_vbo,
+              text_normals_vbo, textIndexBuffer, numVerticesText);
+
   renderModel(lampProgramId, lamp_positions_vbo, lamp_texCoords_vbo,
               lamp_normals_vbo, lampIndexBuffer, numVerticesLamp);
 
   // make the draw buffer to display buffer (i.e. display what we have drawn)
+  
   glutSwapBuffers();
 }
 
