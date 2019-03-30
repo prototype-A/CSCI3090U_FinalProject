@@ -32,6 +32,7 @@ GLuint lamp_texCoords_vbo = 0;
 GLuint lamp_normals_vbo = 0;
 GLuint lmap_colours_vbo = 0;
 unsigned int numVerticesLamp;
+float t = 0.0f; // Jumping height
 
 // pixar text
 GLuint textProgramId;
@@ -54,7 +55,6 @@ glm::vec3 eyePosition(40, 30, 30);
 float lastX = std::numeric_limits<float>::infinity();
 float lastY = std::numeric_limits<float>::infinity();
 
-float shininess = 50;
 float scaleFactor = 1.0f;
 
 
@@ -62,7 +62,7 @@ static void loadModel(const std::string filename, GLuint& positions_vbo,
                       GLuint& texCoords_vbo, GLuint& normals_vbo,
                       unsigned int& numVertices, GLuint& indexBuffer) {
   ObjMesh mesh;
-  mesh.load(filename, false, false);
+  mesh.load(filename, true, false);
 
   numVertices = mesh.getNumIndexedVertices();
   Vector3* vertexPositions = mesh.getIndexedPositions();
@@ -100,7 +100,7 @@ static void loadModels(void) {
   loadModel("meshes/pixarlamp/pixar.obj", text_positions_vbo,
             text_texCoords_vbo, text_normals_vbo, numVerticesText,
             textIndexBuffer);
-  
+
 }
 
 static void loadShader(const std::string vertShaderName,
@@ -128,28 +128,31 @@ static void update(void) {
     }
     */
 
+    t += 0.013;
+    // Prevent overflow
+    if (t == 360) {
+      t = 0;
+    }
+
     glutPostRedisplay();
 }
 
 
 static void renderModel(GLuint programId, GLuint& positions_vbo,
                         GLuint& texCoords_vbo, GLuint& normals_vbo,
-                        GLuint& indexBuffer, unsigned int numVertices) {
-  //glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
+                        GLuint& indexBuffer, unsigned int numVertices,
+                        glm::vec3 translation, glm::vec3 scale,
+                        glm::vec3 rotation, glm::vec3 alphaColour,
+                        float shininess) {
   // Draw the lamp model
 	glUseProgram(programId);
-
-  // Turn on depth buffering
-  glEnable(GL_DEPTH_TEST);
-  //glDepthFunc(GL_LESS);
 
   // projection matrix - perspective projection
   // FOV:           45°
   // Aspect ratio:  4:3 ratio
   // Z range:       between 0.1 and 100.0
   float aspectRatio = (float)width / (float)height;
-  glm::mat4 projection = glm::perspective(glm::radians(45.0f), aspectRatio,
+  glm::mat4 projection = glm::perspective(glm::radians(30.0f), aspectRatio,
                                           0.1f, 1000.0f);
 
   // projection matrix - orthographic (non-perspective) projection
@@ -172,11 +175,11 @@ static void renderModel(GLuint programId, GLuint& positions_vbo,
   // Earth model matrix: translate, scale, and rotate the model
   glm::vec3 rotationAxis(0,1,0);
   glm::mat4 model = glm::mat4(1.0f);
-  //model = glm::translate(model, glm::vec3(-6.0f, -2.0f, 1.0));
-  model = glm::rotate(model, glm::radians(xAngle), glm::vec3(1, 0, 0)); // rotate about the x-axis
-  model = glm::rotate(model, glm::radians(yAngle), glm::vec3(0, 1, 0)); // rotate about the y-axis
-  model = glm::rotate(model, glm::radians(zAngle), glm::vec3(0, 0, 1)); // rotate about the z-axis
-  model = glm::scale(model, glm::vec3(scaleFactor, scaleFactor, scaleFactor));
+  model = glm::translate(model, translation);
+  model = glm::rotate(model, glm::radians(rotation.x), glm::vec3(1, 0, 0)); // rotate about the x-axis
+  model = glm::rotate(model, glm::radians(rotation.y), glm::vec3(0, 1, 0)); // rotate about the y-axis
+  model = glm::rotate(model, glm::radians(rotation.z), glm::vec3(0, 0, 1)); // rotate about the z-axis
+  model = glm::scale(model, scale * scaleFactor);
 
   // Model-view-projection matrix
   glm::mat4 mvp = projection * view * model;
@@ -195,11 +198,11 @@ static void renderModel(GLuint programId, GLuint& positions_vbo,
 
   // Set model colour
   GLuint diffuseColourId = glGetUniformLocation(programId, "u_DiffuseColour");
-  glUniform4f(diffuseColourId, 0.7, 0.7, 0.7, 1.0);
+  glUniform4f(diffuseColourId, alphaColour.x, alphaColour.y, alphaColour.z, 1.0);
 
   // Set position of light for directional light
   GLuint lightDirectionId = glGetUniformLocation(programId, "u_LightDirection");
-  glUniform4f(lightDirectionId, 0, -100, 0, 0);
+  glUniform4f(lightDirectionId, 10, -100, -50, 0);
 
   // Set shininess
   GLuint shininessId = glGetUniformLocation(programId, "u_Shininess");
@@ -239,14 +242,24 @@ static void renderModel(GLuint programId, GLuint& positions_vbo,
 static void render(void) {
   // Render the lamp
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-  renderModel(textProgramId, text_positions_vbo, text_texCoords_vbo,
-              text_normals_vbo, textIndexBuffer, numVerticesText);
 
+  // Turn on depth buffering
+  glEnable(GL_DEPTH_TEST);
+  //glDepthFunc(GL_LESS);
+
+  // Render "PIXAR"
+  renderModel(textProgramId, text_positions_vbo, text_texCoords_vbo,
+              text_normals_vbo, textIndexBuffer, numVerticesText,
+              glm::vec3(6.0, 0.0, 0.0), glm::vec3(7.5, 7.5, 7.5),
+              glm::vec3(-15.0, 8.0, 15.0), glm::vec3(0.2, 0.2, 0.2), 50);
+
+  // Render lamp
   renderModel(lampProgramId, lamp_positions_vbo, lamp_texCoords_vbo,
-              lamp_normals_vbo, lampIndexBuffer, numVerticesLamp);
+              lamp_normals_vbo, lampIndexBuffer, numVerticesLamp,
+              glm::vec3(-0.4, 9.0 + sinf(t) * 3.0, 8.6), glm::vec3(0.0075, 0.0075 + (cos(t) - sinf(t)) / 1500, 0.0075),
+              glm::vec3(0.0, -80.0, 4.0), glm::vec3(0.8, 0.8, 0.8), 100);
 
   // make the draw buffer to display buffer (i.e. display what we have drawn)
-  
   glutSwapBuffers();
 }
 
@@ -258,7 +271,7 @@ static void reshape(int w, int h) {
     height = h;
 }
 
-
+/*
 static void drag(int x, int y) {
   if (!std::isinf(lastX) && !std::isinf(lastY)) {
     float dx = lastX - (float)x;
@@ -281,9 +294,9 @@ static void drag(int x, int y) {
     lastY = (float)y;
   }
 }
+*/
 
-
-
+/*
 static void mouse(int button, int state, int x, int y) {
     if (button == GLUT_LEFT_BUTTON && state == GLUT_DOWN) {
       std::cout << "Starting scale" << std::endl;
@@ -310,7 +323,7 @@ static void mouse(int button, int state, int x, int y) {
       rotating = false;
     }
 }
-
+*/
 
 /*
 static void keyboard(unsigned char key, int x, int y) {
@@ -349,8 +362,8 @@ int main(int argc, char** argv) {
     glutIdleFunc(&update);
     glutDisplayFunc(&render);
     glutReshapeFunc(&reshape);
-    glutMotionFunc(&drag);
-    glutMouseFunc(&mouse);
+    //glutMotionFunc(&drag);
+    //glutMouseFunc(&mouse);
     //glutKeyboardFunc(&keyboard);
 
     glewInit();

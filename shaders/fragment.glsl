@@ -12,7 +12,7 @@ void main() {
     vec3 normal = normalize(v_Normal);
 
     // Ambient
-    vec4 ambientColour = vec4(0.1, 0.1, 0.1, 1.0) * u_DiffuseColour;
+    vec4 ambientColour = vec4(0.2, 0.2, 0.2, 1.0) * u_DiffuseColour;
 
     // Diffuse
     float diffuse = clamp(dot(normal, lightDirection), 0, 1);
